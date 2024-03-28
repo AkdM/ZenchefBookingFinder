@@ -6,6 +6,7 @@ import argparse
 import datetime
 import sys
 from dateutil.relativedelta import relativedelta
+import urllib3
 
 def restaurant_informations(restaurant_id):
   restaurant_request = requests.request(
@@ -90,18 +91,26 @@ def main():
     knownSlots = {}
     while True:
       tmpSlots = {}
+      isBreaked = False
       for restaurant in restaurants:
         url = f"https://bookings.zenchef.com/results?rid={restaurant}"
         isNotified = False
         tmpBegin = datetime.datetime.strptime(args.date_begin, "%Y-%m-%d")
         while tmpBegin <= datetime.datetime.strptime(args.date_end, "%Y-%m-%d"):
+          if isBreaked:
+            break
           tmpEnd = min(tmpBegin + relativedelta(days=40), datetime.datetime.strptime(args.date_end, "%Y-%m-%d"))
-          availableSlots = check_availabilities(
-            restaurant_id=restaurant,
-            guests=args.guests,
-            date_begin=tmpBegin.strftime('%Y-%m-%d'),
-            date_end=tmpEnd.strftime('%Y-%m-%d'),
-          )
+          try:
+            availableSlots = check_availabilities(
+              restaurant_id=restaurant,
+              guests=args.guests,
+              date_begin=tmpBegin.strftime('%Y-%m-%d'),
+              date_end=tmpEnd.strftime('%Y-%m-%d'),
+            )
+          except (urllib3.exceptions.HTTPError, requests.RequestException) as e:
+            isBreaked = True
+            print ("ERROR - Unable to retrieve booking availability, retrying later")
+            break
           toNotify = False
           for shift in availableSlots:
             message = f"☑️ {availableSlots[shift]['date']} - {{hour}} ({availableSlots[shift]['name']}) - {args.guests} guests - {restaurants[restaurant]}\n{url}\n"
@@ -134,12 +143,18 @@ def main():
                   'text': f"✅ Slots found at {restaurants[restaurant]} click to check : [{urlEscape}]({urlEscape})",
                   'parse_mode': 'MarkdownV2'
               }
-              rqst = requests.post(api_url, json=api_params, timeout=10)
-              if not rqst or not rqst.ok:
-                print("Unable to send Telegram message, please check network or configuration")
+              try:
+                rqst = requests.post(api_url, json=api_params, timeout=10)
+                if not rqst or not rqst.ok:
+                  print("Unable to send Telegram message, please check network or configuration")
+              except (urllib3.exceptions.HTTPError, requests.RequestException) as e:
+                isBreaked = True
+                print ("ERROR - Unable to send Telegram message, retrying later")
+                break
           time.sleep(5)
           tmpBegin = tmpEnd + relativedelta(days=1)
-      knownSlots = tmpSlots
+      if not isBreaked:
+        knownSlots = tmpSlots
       time.sleep(60 * args.frequency)
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 # Zenchef Table Booking finder
 
 ## 💭 About
-Automatically checks for booking tables for a restaurant using Zenchef. Refreshes every 30 seconds.
+Automatically checks for booking tables for a restaurant using Zenchef.
 
 ## 🚀 Installation
 
@@ -17,19 +17,26 @@ Zenchef Table Booking finder
 options:
   -h, --help            show this help message and exit
   --restaurant RESTAURANT_ID, -r RESTAURANT_ID
-                        ID of the restaurant
+                        ID of the restaurant (several IDs can be provided separated with a comma)
   --guests GUESTS, -g GUESTS
                         Number of guests
   --date-begin DATE_BEGIN, -b DATE_BEGIN
                         Date begin to search for (format: YYYY-MM-DD)
   --date-end DATE_END, -e DATE_END
                         Date end to search for (format: YYYY-MM-DD)
+  --frequency FREQUENCY, -f FREQUENCY
+                        Frequency in minute between each check
+  --telegram TELEGRAM   Telegram token and chat ID (format: token:chatId separated by a colon)
+  --mode {NotificationCenter,Telegram,Both}, -m {NotificationCenter,Telegram,Both}
+                        Mode of alert (if telegram token is provided only)
+
 ```
 
 ## 🛠️ Dependencies
 
 - [requests](https://pypi.org/project/requests/)
 - [pync](https://pypi.org/project/pync/)
+- [dateutil](https://pypi.org/project/python-dateutil/)
 
 ## 🤝 Contributing
 
